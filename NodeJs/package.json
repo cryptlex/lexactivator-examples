@@ -1,0 +1,14 @@
+{
+  "name": "LexActivator-Examples",
+  "version": "1.0.0",
+  "description": "Lexactivator examples",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cryptlex/lexactivator": "^3.18.2"
+  }
+}
