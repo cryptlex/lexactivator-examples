@@ -1,0 +1,2 @@
+# Exclude Delphi/Pascal examples from GitHub language stats
+delphi/** linguist-detectable=false
