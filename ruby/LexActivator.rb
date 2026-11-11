@@ -35,7 +35,17 @@ module LexActivator
     LA_IN_MEMORY = 4
   end
 
+  module ResourceType
+    LA_RESOURCE_TYPE_PRODUCT = 1
+    LA_RESOURCE_TYPE_LICENSE = 2
+    LA_RESOURCE_TYPE_USER = 4
+    LA_RESOURCE_TYPE_ACTIVATION = 8
+    LA_RESOURCE_TYPE_TRIAL_ACTIVATION = 16
+    LA_RESOURCE_TYPE_ORGANIZATION = 32
+  end
+
   BUFFER_SIZE_256 = 256
+  BUFFER_SIZE_1024 = 1024
   BUFFER_SIZE_4096 = 4096
   MAX_METADATA_SIZE = 100
 
@@ -76,6 +86,13 @@ module LexActivator
            :value, [CHAR, BUFFER_SIZE_256],
            :baseValue, [CHAR, BUFFER_SIZE_256],
            :expiresAt, :int64
+  end
+
+  class CustomAttribute < FFI::Struct
+    layout :name, [CHAR, BUFFER_SIZE_256],
+          :value, [CHAR, BUFFER_SIZE_1024],
+          :dataType, [CHAR, BUFFER_SIZE_256],
+          :resourceType, :uint
   end
 
   # @method SetProductFile(file_path)
@@ -208,6 +225,31 @@ module LexActivator
   # @return [Integer]
   # @scope class
   attach_function :SetCacheMode, :SetCacheMode, [:uint], :int
+
+  # @method SetCustomAttribute(resourceType, name, value)
+  # @param [Integer] resourceType - specifies the type of resource associated with the custom attribute.
+  # @param [String] name - specifies the name of the custom attribute.
+  # @param [String] value - specifies the value of the custom attribute.
+  # @return [Integer]
+  # @scope class
+  attach_function :SetCustomAttribute, :SetCustomAttribute, [:uint, :string, :string], :int
+
+  # @method GetCustomAttributes(resourceType, customAttributes, length)
+  # @param [Integer] resourceType - specifies the type of resource associated with the custom attribute.
+  # @param [FFI::Pointer] customAttributes - Pointer to an array of CustomAttribute structs
+  # @param [Integer] length - The number of CustomAttribute structs in the array
+  # @return [Integer]
+  # @scope class
+  attach_function :GetCustomAttributes, :GetCustomAttributes, [:uint, :pointer, :uint], :int
+
+  # @method GetCustomAttribute(resourceType, name, value, length)
+  # @param [Integer] resourceType - specifies the type of resource associated with the custom attribute.
+  # @param [String] name - specifies the name of the custom attribute to retrieve.
+  # @param [FFI::Pointer] value - pointer to the buffer where the retrieved attribute value is stored.
+  # @param [Integer] length - specifies the size of the buffer allocated for the attribute value.
+  # @return [Integer]
+  # @scope class
+  attach_function :GetCustomAttribute, :GetCustomAttribute, [:uint, :string, :pointer, :uint], :int
 
   # @method GetProductMetadata(key, value, length)
   # @param [String] key

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #define BUFFER_SIZE_256 256
+#define BUFFER_SIZE_1024 1024
 #define BUFFER_SIZE_2048 2048
 #define BUFFER_SIZE_4096 4096
 #define MAX_METADATA_SIZE 100
@@ -160,5 +161,22 @@ typedef struct
     CHARTYPE type[BUFFER_SIZE_256];
     Metadata metadata[MAX_METADATA_SIZE];
 } UserLicense;
+
+/*
+    STRUCT: CustomAttribute
+
+    MEMBERS:
+    * name         - Name of the custom attribute.
+    * value        - Value of the custom attribute.
+    * dataType     - Data type of the custom attribute.
+    * resourceType - Resource the custom attribute belongs to. One of the LA_RESOURCE_TYPE_* values.
+*/
+typedef struct
+{
+    CHARTYPE name[BUFFER_SIZE_256];
+    CHARTYPE value[BUFFER_SIZE_1024];
+    CHARTYPE dataType[BUFFER_SIZE_256];
+    uint32_t resourceType;
+} CustomAttribute;
 
 #endif // LEX_TYPES_H
