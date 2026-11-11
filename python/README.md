@@ -12,7 +12,7 @@ pip install cryptlex.lexactivator
 Then you can include it in your code:
 
 ```python
-from cryptlex.lexactivator import LexActivator, LexStatusCodes, PermissionFlags, LexActivatorException
+from cryptlex.lexactivator import LexActivator, LexStatusCodes, ResourceType, PermissionFlags, LexActivatorException
 ```
 
 ## Running
