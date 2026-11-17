@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cryptlex.LexActivator" Version="3.42.2" />
+    <PackageReference Include="Cryptlex.LexActivator" Version="3.47.0" />
   </ItemGroup>
 
 </Project>

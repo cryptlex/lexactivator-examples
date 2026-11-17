@@ -73,6 +73,13 @@ typedef void (LA_CC *ReleaseCallbackType)(int, Release*, void*);
 #define LA_RELEASES_ALL ((uint32_t)1)
 #define LA_RELEASES_ALLOWED ((uint32_t)2)
 
+#define LA_RESOURCE_TYPE_PRODUCT ((uint32_t)1)
+#define LA_RESOURCE_TYPE_LICENSE ((uint32_t)2)
+#define LA_RESOURCE_TYPE_USER ((uint32_t)4)
+#define LA_RESOURCE_TYPE_ACTIVATION ((uint32_t)8)
+#define LA_RESOURCE_TYPE_TRIAL_ACTIVATION ((uint32_t)16)
+#define LA_RESOURCE_TYPE_ORGANIZATION ((uint32_t)32)
+
 /*
     FUNCTION: SetProductFile()
 
@@ -301,6 +308,8 @@ LEXACTIVATOR_API int LA_CC SetActivationLeaseDuration(int64_t leaseDuration);
     The  metadata appears along with the activation details of the license
     in dashboard.
 
+    NOTE: This function is deprecated. Use SetCustomAttribute() instead.
+
     PARAMETERS:
     * key - string of maximum length 256 characters.
     * value - string of maximum length 4096 characters.
@@ -317,6 +326,8 @@ LEXACTIVATOR_API int LA_CC SetActivationMetadata(CSTRTYPE key, CSTRTYPE value);
 
     The  metadata appears along with the trial activation details of the product
     in dashboard.
+
+    NOTE: This function is deprecated. Use SetCustomAttribute() instead.
 
     PARAMETERS:
     * key - string of maximum length 256 characters.
@@ -478,6 +489,119 @@ LEXACTIVATOR_API int LA_CC SetTwoFactorAuthenticationCode(CSTRTYPE twoFactorAuth
 LEXACTIVATOR_API int LA_CC SetCacheMode(uint32_t enable);
 
 /*
+    FUNCTION: SetCustomAttribute()
+
+    PURPOSE: Sets the value of the custom attribute for the specified resource type.
+
+    If the custom attribute is required, this function must be called before the
+    license or trial is activated.
+
+    GetCustomAttribute() does not return the value until the license or trial has
+    been activated or synced.
+
+    Setting an existing custom attribute overwrites its value. A value cannot be
+    removed, but an empty string is a valid value.
+
+    A license custom attribute must grant the application read-write access. Activation
+    custom attributes are always read-write. Setting a read only license custom
+    attribute returns LA_E_CUSTOM_ATTRIBUTE_ACCESS_DENIED.
+
+    PARAMETERS:
+    * resourceType - the resource on which to set the custom attribute. Pass exactly
+      one of the following values: LA_RESOURCE_TYPE_LICENSE, LA_RESOURCE_TYPE_ACTIVATION,
+      LA_RESOURCE_TYPE_TRIAL_ACTIVATION. Combining the values using the bitwise OR
+      operator is not supported. The product, user and organization custom attributes cannot
+      be set by the application and return LA_E_CUSTOM_ATTRIBUTE_RESOURCE_TYPE_INVALID.
+
+      - LA_RESOURCE_TYPE_LICENSE: Sets the custom attribute on the license. The
+        value appears along with the license details in the dashboard.
+
+      - LA_RESOURCE_TYPE_ACTIVATION: Sets the custom attribute on the activation.
+        The value appears along with the activation details of the license in the
+        dashboard.
+
+      - LA_RESOURCE_TYPE_TRIAL_ACTIVATION: Sets the custom attribute on the trial
+        activation. The value appears along with the trial activation details of the
+        product in the dashboard.
+
+    * name - name of the custom attribute.
+    * value - value of the custom attribute, of maximum length 1024 characters.
+
+    RETURN CODES: LA_OK, LA_E_PRODUCT_ID, LA_E_LICENSE_KEY,
+    LA_E_CUSTOM_ATTRIBUTE_RESOURCE_TYPE_INVALID, LA_E_CUSTOM_ATTRIBUTE_NAME_LENGTH,
+    LA_E_CUSTOM_ATTRIBUTE_VALUE_LENGTH, LA_E_CUSTOM_ATTRIBUTE_LIMIT,
+    LA_E_CUSTOM_ATTRIBUTE_ACCESS_DENIED
+*/
+LEXACTIVATOR_API int LA_CC SetCustomAttribute(uint32_t resourceType, CSTRTYPE name, CSTRTYPE value);
+
+/*
+    FUNCTION: GetCustomAttribute()
+
+    PURPOSE: Gets the value of the custom attribute for the specified resource type.
+
+    Only the custom attributes which grant the application read access are available. An
+    attribute whose application access is set to none behaves as if it does not exist and
+    returns LA_E_CUSTOM_ATTRIBUTE_NOT_FOUND.
+
+    A value set with SetCustomAttribute() is not returned by this function until the license
+    or trial has been activated or synced.
+
+    PARAMETERS:
+    * resourceType - the resource on which the custom attribute is defined. Pass exactly
+      one of the following values: LA_RESOURCE_TYPE_PRODUCT, LA_RESOURCE_TYPE_LICENSE,
+      LA_RESOURCE_TYPE_USER, LA_RESOURCE_TYPE_ACTIVATION, LA_RESOURCE_TYPE_TRIAL_ACTIVATION , LA_RESOURCE_TYPE_ORGANIZATION.
+      Combining the values using the bitwise OR operator is not supported.
+
+      - LA_RESOURCE_TYPE_PRODUCT: Gets the custom attribute defined on the product. This is
+        available for trial as well as license activations.
+
+      - LA_RESOURCE_TYPE_LICENSE: Gets the custom attribute defined on the license.
+
+      - LA_RESOURCE_TYPE_USER: Gets the custom attribute defined on the user the license is
+        assigned to.
+
+      - LA_RESOURCE_TYPE_ACTIVATION: Gets the custom attribute defined on the current
+        activation.
+
+      - LA_RESOURCE_TYPE_TRIAL_ACTIVATION: Gets the custom attribute defined on the current
+        trial activation.
+
+      - LA_RESOURCE_TYPE_ORGANIZATION: Gets the custom attribute defined on the organization the license
+        is linked to.
+
+    * name - name of the custom attribute to retrieve the value.
+    * value - pointer to a buffer that receives the value of the custom attribute.
+    * length - size of the buffer pointed to by the value parameter.
+
+    RETURN CODES: LA_OK, LA_FAIL, LA_E_PRODUCT_ID,
+    LA_E_CUSTOM_ATTRIBUTE_RESOURCE_TYPE_INVALID, LA_E_CUSTOM_ATTRIBUTE_NOT_FOUND,
+    LA_E_BUFFER_SIZE
+*/
+LEXACTIVATOR_API int LA_CC GetCustomAttribute(uint32_t resourceType, CSTRTYPE name, STRTYPE value, uint32_t length);
+
+/*
+    FUNCTION: GetCustomAttributes()
+
+    PURPOSE: Gets the custom attributes for the specified resource type.
+
+    Only the custom attributes which grant the application read access are returned.
+
+    PARAMETERS:
+    * resourceType - the resource on which the custom attributes are defined. Pass exactly
+      one of the following values: LA_RESOURCE_TYPE_PRODUCT, LA_RESOURCE_TYPE_LICENSE,
+      LA_RESOURCE_TYPE_USER, LA_RESOURCE_TYPE_ACTIVATION, LA_RESOURCE_TYPE_TRIAL_ACTIVATION, LA_RESOURCE_TYPE_ORGANIZATION.
+      Combining the values using the bitwise OR operator is not supported.
+
+    * customAttributes - pointer to the array of structs that receives the values of the
+      custom attributes. The array must be of size MAX_CUSTOM_ATTRIBUTES.
+    * length - size of the customAttributes array.
+
+    RETURN CODES: LA_OK, LA_FAIL, LA_E_PRODUCT_ID,
+    LA_E_CUSTOM_ATTRIBUTE_RESOURCE_TYPE_INVALID, LA_E_BUFFER_SIZE
+*/
+LEXACTIVATOR_API int LA_CC GetCustomAttributes(uint32_t resourceType, CustomAttribute* customAttributes, uint32_t length);
+
+/*
     FUNCTION: GetProductMetadata()
 
     PURPOSE: Gets the product metadata as set in the dashboard.
@@ -491,7 +615,6 @@ LEXACTIVATOR_API int LA_CC SetCacheMode(uint32_t enable);
 
     RETURN CODES: LA_OK, LA_E_PRODUCT_ID, LA_E_METADATA_KEY_NOT_FOUND, LA_E_BUFFER_SIZE
 */
-
 LEXACTIVATOR_API int LA_CC GetProductMetadata(CSTRTYPE key, STRTYPE value, uint32_t length);
 
 /*
@@ -624,6 +747,8 @@ LEXACTIVATOR_API int LA_CC GetFeatureEntitlement(CSTRTYPE featureName, FeatureEn
     FUNCTION: GetLicenseMetadata()
 
     PURPOSE: Gets the license metadata as set in the dashboard.
+
+    NOTE: This function is deprecated. Use GetCustomAttribute() instead.
 
     PARAMETERS:
     * key - key to retrieve the value
@@ -849,6 +974,8 @@ LEXACTIVATOR_API int LA_CC GetLicenseUserCompany(STRTYPE company, uint32_t lengt
 
     PURPOSE: Gets the metadata associated with the license user.
 
+    NOTE: This function is deprecated. Use GetCustomAttribute() instead.
+
     PARAMETERS:
     * key - key to retrieve the value
     * value - pointer to a buffer that receives the value of the string
@@ -937,6 +1064,8 @@ LEXACTIVATOR_API int LA_CC GetActivationId(STRTYPE id, uint32_t length);
 
     PURPOSE: Gets the activation metadata.
 
+    NOTE: This function is deprecated. Use GetCustomAttribute() instead.
+
     PARAMETERS:
     * key - key to retrieve the value
     * value - pointer to a buffer that receives the value of the string
@@ -1005,6 +1134,8 @@ LEXACTIVATOR_API int LA_CC GetLastActivationError(uint32_t *errorPtr);
     FUNCTION: GetTrialActivationMetadata()
 
     PURPOSE: Gets the trial activation metadata.
+
+    NOTE: This function is deprecated. Use GetCustomAttribute() instead.
 
     PARAMETERS:
     * key - key to retrieve the value

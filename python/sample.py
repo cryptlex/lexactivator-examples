@@ -1,6 +1,6 @@
 import time
 
-from cryptlex.lexactivator import LexActivator, LexStatusCodes, PermissionFlags, ReleaseFlags, LexActivatorException
+from cryptlex.lexactivator import LexActivator, LexStatusCodes, PermissionFlags, ResourceType, ReleaseFlags, LexActivatorException
 
 
 def init():

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const { LexActivator, LexStatusCodes, LexActivatorException, PermissionFlags, ReleaseFlags } = require('@cryptlex/lexactivator');
+const { LexActivator, LexStatusCodes, LexActivatorException, ResourceType, PermissionFlags, ReleaseFlags } = require('@cryptlex/lexactivator');
 
 function init() {
 	LexActivator.SetProductData('PASTE_CONTENT_OF_PRODUCT.DAT_FILE');

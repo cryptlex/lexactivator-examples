@@ -13,7 +13,7 @@ This installs the [`@cryptlex/lexactivator`](https://www.npmjs.com/package/@cryp
 package declared in [package.json](package.json). You can then include it in your code:
 
 ```js
-const { LexActivator, LexStatusCodes, LexActivatorException, PermissionFlags } = require('@cryptlex/lexactivator');
+const { LexActivator, LexStatusCodes, LexActivatorException, ResourceType, PermissionFlags } = require('@cryptlex/lexactivator');
 ```
 
 ## Running

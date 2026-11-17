@@ -4,6 +4,7 @@ import com.cryptlex.lexactivator.LexActivator;
 import com.cryptlex.lexactivator.LicenseCallbackEvent;
 import com.cryptlex.lexactivator.ReleaseUpdateCallbackEvent;
 import com.cryptlex.lexactivator.Release;
+import com.cryptlex.lexactivator.CustomAttribute;
 import com.cryptlex.lexactivator.LexActivatorException;
 import java.time.Instant;
 

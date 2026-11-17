@@ -6,7 +6,7 @@ description = "Example demonstrating license activation with the LexActivator Ru
 publish = false
 
 [dependencies]
-lexactivator = "3"
+lexactivator = "3.47.0"
 
 [[example]]
 name = "license-activation"

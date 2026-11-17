@@ -1,7 +1,7 @@
 use std::io::{self, BufRead}; // for user input (pause)
 
 use lexactivator::{
-    LexActivatorCode, LexActivatorError, LexActivatorStatus, PermissionFlags,
+    LexActivatorCode, LexActivatorError, LexActivatorStatus, ResourceType, PermissionFlags,
 };
 
 fn init() {
