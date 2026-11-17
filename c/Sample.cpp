@@ -9,6 +9,7 @@
 #define LEXACTIVATOR_STATIC
 #pragma comment(lib, "winhttp")
 #pragma comment(lib, "crypt32")
+#pragma comment(lib, "ws2_32.lib")
 #if _WIN64
 #pragma comment(lib, "x64/libcurl_MD")
 #pragma comment(lib, "x64/LexActivator")
