@@ -92,6 +92,78 @@ type
     ExpiresAt: Int64;
   end;
 
+type
+  // LA_RELEASES_ALL, LA_RELEASES_ALLOWED
+  TLAReleaseFlags = (lrfAll, lrfAllowed);
+
+  // LA_RESOURCE_TYPE_PRODUCT, LA_RESOURCE_TYPE_LICENSE, LA_RESOURCE_TYPE_USER,
+  // LA_RESOURCE_TYPE_ACTIVATION, LA_RESOURCE_TYPE_TRIAL_ACTIVATION,
+  // LA_RESOURCE_TYPE_ORGANIZATION
+  TLAResourceType = (lrtProduct, lrtLicense, lrtUser, lrtActivation,
+    lrtTrialActivation, lrtOrganization);
+
+  // LA_RELEASE_UPDATE_AVAILABLE, LA_RELEASE_UPDATE_NOT_AVAILABLE,
+  // LA_RELEASE_UPDATE_AVAILABLE_NOT_ALLOWED
+  TLAReleaseUpdateStatus = (lrsUpdateAvailable, lrsUpdateNotAvailable,
+    lrsUpdateAvailableNotAllowed,
+    lrsUnknown // any other status code
+    );
+
+type
+  TLACustomAttribute = record
+    Name: UnicodeString;
+    Value: UnicodeString;
+    DataType: UnicodeString;
+    ResourceType: UInt32; // raw LA_RESOURCE_TYPE_* value
+  end;
+
+type
+  TLADataStoreInfo = record
+    StorageKind: UnicodeString;
+    PermissionFlag: UnicodeString;
+    IsCustomDataDirectory: Boolean;
+    Path: UnicodeString;
+  end;
+
+type
+  TLALicenseLookupInfo = record
+    Key: UnicodeString;
+    &Type: UnicodeString;
+  end;
+
+type
+  TLAReleaseFile = record
+    Size: Int64;
+    Downloads: Int64;
+    Secured: Boolean;
+    Id: UnicodeString;
+    Name: UnicodeString;
+    Url: UnicodeString;
+    Extension: UnicodeString;
+    Checksum: UnicodeString;
+    ReleaseId: UnicodeString;
+    CreatedAt: UnicodeString;
+    UpdatedAt: UnicodeString;
+  end;
+
+type
+  TLARelease = record
+    TotalFiles: Integer;
+    IsPrivate: Boolean;
+    IsPublished: Boolean;
+    Id: UnicodeString;
+    CreatedAt: UnicodeString;
+    UpdatedAt: UnicodeString;
+    Name: UnicodeString;
+    Channel: UnicodeString;
+    Version: UnicodeString;
+    Notes: UnicodeString;
+    PublishedAt: UnicodeString;
+    ProductId: UnicodeString;
+    Platforms: TArray<UnicodeString>;
+    Files: TArray<TLAReleaseFile>;
+  end;
+
 function LAFlagsToString(Item: TLAFlags): string;
 function LAKeyStatusToString(Item: TLAKeyStatus): string;
 
@@ -1476,6 +1548,262 @@ procedure ResetActivationMeterAttributeUses(const Name: UnicodeString);
 
 procedure LAReset;
 
+(*
+    PROCEDURE: SetCustomAttribute()
+
+    PURPOSE: Sets a custom attribute on the given resource.
+
+    Only license, activation and trial activation resources can be written
+    from the client.
+
+    PARAMETERS:
+    * ResourceType - resource the attribute belongs to
+    * Name - name of the custom attribute
+    * Value - value of the custom attribute
+
+    EXCEPTIONS: ELAFailException, ELAProductIdException, ELALicenseKeyException,
+    ELACustomAttributeResourceTypeInvalidException,
+    ELACustomAttributeNameLengthException,
+    ELACustomAttributeValueLengthException, ELACustomAttributeLimitException,
+    ELACustomAttributeAccessDeniedException
+*)
+
+procedure SetCustomAttribute(ResourceType: TLAResourceType; const Name, Value: UnicodeString);
+
+(*
+    PROCEDURE: SetReleasePlatform()
+
+    PURPOSE: Sets the release platform e.g. windows, macos, linux
+
+    The release platform appears along with the activation details in dashboard.
+
+    PARAMETERS:
+    * ReleasePlatform - release platform e.g. windows, macos, linux
+
+    EXCEPTIONS: ELAFailException, ELAProductIdException,
+    ELAReleasePlatformLengthException
+*)
+
+procedure SetReleasePlatform(const ReleasePlatform: UnicodeString);
+
+(*
+    PROCEDURE: SetReleaseChannel()
+
+    PURPOSE: Sets the release channel e.g. stable, beta
+
+    The release channel appears along with the activation details in dashboard.
+
+    PARAMETERS:
+    * ReleaseChannel - release channel e.g. stable
+
+    EXCEPTIONS: ELAFailException, ELAProductIdException,
+    ELAReleaseChannelLengthException
+*)
+
+procedure SetReleaseChannel(const ReleaseChannel: UnicodeString);
+
+(*
+    PROCEDURE: SetTlsPeerVerification()
+
+    PURPOSE: Enables or disables the TLS peer verification.
+
+    PARAMETERS:
+    * Enable - False to disable the verification, True to enable it
+
+    NOTE: This function only has an effect on Linux builds of the library.
+*)
+
+procedure SetTlsPeerVerification(Enable: Boolean);
+
+(*
+    PROCEDURE: SetTlsTrustStore()
+
+    PURPOSE: Sets the CA bundle file and/or the CA directory used to verify
+    the TLS peer.
+
+    PARAMETERS:
+    * CaBundleFilePath - path of the CA bundle file, empty string to skip
+    * CaDirectoryPath - path of the CA directory, empty string to skip
+
+    NOTE: This function only has an effect on Linux builds of the library.
+*)
+
+procedure SetTlsTrustStore(const CaBundleFilePath, CaDirectoryPath: UnicodeString);
+
+(*
+    FUNCTION: GetLicenseEntitlementSetTier()
+
+    PURPOSE: Gets the tier of the entitlement set associated with the license.
+
+    RESULT: Tier of the entitlement set
+
+    EXCEPTIONS: ELAFailException, ELAProductIdException, ELATimeException,
+    ELATimeModifiedException, ELAEntitlementSetNotLinkedException
+*)
+
+function GetLicenseEntitlementSetTier: Int64;
+
+(*
+    FUNCTION: GetActivationCreationDate()
+
+    PURPOSE: Gets the activation creation date timestamp.
+
+    RESULT: Activation creation date timestamp
+
+    EXCEPTIONS: ELAFailException, ELAProductIdException, ELATimeException,
+    ELATimeModifiedException
+*)
+
+function GetActivationCreationDate: TDateTime;
+
+(*
+    FUNCTION: GetCustomAttribute()
+
+    PURPOSE: Gets the value of a custom attribute of the given resource.
+
+    PARAMETERS:
+    * ResourceType - resource the attribute belongs to
+    * Name - name of the custom attribute
+
+    RESULT: Value of the custom attribute
+
+    EXCEPTIONS: ELAFailException, ELAProductIdException,
+    ELACustomAttributeResourceTypeInvalidException,
+    ELACustomAttributeNotFoundException, ELABufferSizeException
+*)
+
+function GetCustomAttribute(ResourceType: TLAResourceType; const Name: UnicodeString): UnicodeString;
+
+(*
+    FUNCTION: GetCustomAttributes()
+
+    PURPOSE: Gets all the custom attributes of the given resource.
+
+    PARAMETERS:
+    * ResourceType - resource the attributes belong to
+
+    RESULT: Array of custom attributes
+
+    EXCEPTIONS: ELAFailException, ELAProductIdException,
+    ELACustomAttributeResourceTypeInvalidException, ELABufferSizeException
+*)
+
+function GetCustomAttributes(ResourceType: TLAResourceType): TArray<TLACustomAttribute>;
+
+(*
+    FUNCTION: GetDataStoreInfo()
+
+    PURPOSE: Gets the information about the data store used by the library.
+
+    It must be called after SetProductId().
+
+    RESULT: Storage kind, permission flag and path of the data store
+
+    EXCEPTIONS: ELAFailException, ELAProductIdException, ELABufferSizeException
+*)
+
+function GetDataStoreInfo: TLADataStoreInfo;
+
+(*
+    FUNCTION: LookupLicense()
+
+    PURPOSE: Looks up the license on the server and returns its key and type
+    e.g. node-locked, hosted-floating.
+
+    PARAMETERS:
+    * LicenseKey - license key to look up
+
+    RESULT: Key and type of the license
+
+    EXCEPTIONS: ELAFailException, ELAProductDataException,
+    ELALicenseKeyException, ELAInetException, ELAServerException,
+    ELAClientException, ELARateLimitException, ELABufferSizeException
+*)
+
+function LookupLicense(const LicenseKey: UnicodeString): TLALicenseLookupInfo;
+
+(*
+    PROCEDURE: CheckReleaseUpdate()
+
+    PURPOSE: Checks whether a new release is available for the product.
+
+    This function should only be used if you manage your releases through
+    Cryptlex release management API.
+
+    The release version, platform and channel must be set beforehand using
+    SetReleaseVersion(), SetReleasePlatform() and SetReleaseChannel().
+
+    PARAMETERS:
+    * Callback - invoked with the status, the latest release and UserData
+    * ReleaseFlags - lrfAll to check all the releases, lrfAllowed to check only
+      the releases allowed for the license
+    * UserData - passed to the callback as is
+    * Synchronized - True to invoke the callback in the main thread (requires
+      a message loop), False to invoke it in the library thread
+
+    EXCEPTIONS: ELAFailException, ELAProductIdException, ELALicenseKeyException,
+    ELAReleaseVersionFormatException, ELAReleaseVersionException,
+    ELAReleasePlatformException, ELAReleaseChannelException
+*)
+
+type
+  TLAReleaseProcedureCallback = procedure(Status: TLAReleaseUpdateStatus; const Release: TLARelease; UserData: Pointer);
+  TLAReleaseMethodCallback = procedure(Status: TLAReleaseUpdateStatus; const Release: TLARelease; UserData: Pointer) of object;
+  {$IFDEF DELPHI_HAS_CLOSURES}
+  TLAReleaseClosureCallback = reference to procedure(Status: TLAReleaseUpdateStatus; const Release: TLARelease; UserData: Pointer);
+  {$ENDIF}
+
+procedure CheckReleaseUpdate(Callback: TLAReleaseProcedureCallback; ReleaseFlags: TLAReleaseFlags; UserData: Pointer; Synchronized: Boolean); overload;
+procedure CheckReleaseUpdate(Callback: TLAReleaseMethodCallback; ReleaseFlags: TLAReleaseFlags; UserData: Pointer; Synchronized: Boolean); overload;
+{$IFDEF DELPHI_HAS_CLOSURES}
+procedure CheckReleaseUpdate(Callback: TLAReleaseClosureCallback; ReleaseFlags: TLAReleaseFlags; UserData: Pointer; Synchronized: Boolean); overload;
+{$ENDIF}
+
+(*
+    FUNCTION: SyncLicenseActivation()
+
+    PURPOSE: Syncs the license activation with the Cryptlex servers.
+
+    RESULT: lkOK, lkExpired, lkSuspended, lkGracePeriodOver, lkFail
+
+    EXCEPTIONS: ELAProductIdException, ELALicenseKeyException, ELAInetException,
+    ELAServerException, ELAClientException, ELARevokedException,
+    ELARateLimitException, ELATimeException, ELATimeModifiedException,
+    ELAInsufficientSystemResourcesException
+*)
+
+function SyncLicenseActivation: TLAKeyStatus;
+
+(*
+    FUNCTION: SyncTrialActivation()
+
+    PURPOSE: Syncs the trial activation with the Cryptlex servers.
+
+    RESULT: lkOK, lkTrialExpired, lkFail
+
+    EXCEPTIONS: ELAProductIdException, ELAInetException, ELAServerException,
+    ELAClientException, ELARateLimitException, ELATimeException,
+    ELATimeModifiedException
+*)
+
+function SyncTrialActivation: TLAKeyStatus;
+
+(*
+    PROCEDURE: MigrateToSystemWideActivation()
+
+    PURPOSE: Migrates the existing activation data to the system-wide
+    (lfAllUsers) data store.
+
+    PARAMETERS:
+    * OldPermissionFlag - permission flag used so far, lfUser or lfSystem
+
+    EXCEPTIONS: ELAFailException, ELAProductDataException,
+    ELAFilePermissionException, ELAInvalidPermissionFlagException,
+    ELASystemPermissionException
+*)
+
+procedure MigrateToSystemWideActivation(OldPermissionFlag: TLAFlags);
+
 (*** Exceptions ***)
 
 type
@@ -2362,6 +2690,97 @@ type
     constructor Create;
   end;
 
+    (*
+        CODE: LA_E_INSUFFICIENT_SYSTEM_RESOURCES
+
+        MESSAGE: Insufficient system resources to complete the operation.
+    *)
+
+  ELAInsufficientSystemResourcesException = class(ELAException)
+  public
+    constructor Create;
+  end;
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_NAME_LENGTH
+
+        MESSAGE: The custom attribute name length is more than 256 characters.
+    *)
+
+  ELACustomAttributeNameLengthException = class(ELAException)
+  public
+    constructor Create;
+  end;
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_VALUE_LENGTH
+
+        MESSAGE: The custom attribute value length is more than 1024 characters.
+    *)
+
+  ELACustomAttributeValueLengthException = class(ELAException)
+  public
+    constructor Create;
+  end;
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_LIMIT
+
+        MESSAGE: The maximum allowed number of custom attributes has already
+        been set.
+    *)
+
+  ELACustomAttributeLimitException = class(ELAException)
+  public
+    constructor Create;
+  end;
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_NOT_FOUND
+
+        MESSAGE: The custom attribute does not exist, or the application does
+        not have read access to it.
+    *)
+
+  ELACustomAttributeNotFoundException = class(ELAException)
+  public
+    constructor Create;
+  end;
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_RESOURCE_TYPE_INVALID
+
+        MESSAGE: Invalid custom attribute resource type.
+    *)
+
+  ELACustomAttributeResourceTypeInvalidException = class(ELAException)
+  public
+    constructor Create;
+  end;
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_ACCESS_DENIED
+
+        MESSAGE: The application does not have write access to the custom
+        attribute.
+    *)
+
+  ELACustomAttributeAccessDeniedException = class(ELAException)
+  public
+    constructor Create;
+  end;
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_INVALID
+
+        MESSAGE: Invalid custom attribute.
+    *)
+
+  ELACustomAttributeInvalidException = class(ELAException)
+  public
+    constructor Create;
+  end;
+
 implementation
 
 uses
@@ -3058,6 +3477,73 @@ const
     *)
 
   LA_E_ACTIVATION_CLONE_DETECTED = TLAStatusCode(114);
+
+    (*
+        CODE: LA_E_INSUFFICIENT_SYSTEM_RESOURCES
+
+        MESSAGE: Insufficient system resources to complete the operation.
+    *)
+
+  LA_E_INSUFFICIENT_SYSTEM_RESOURCES = TLAStatusCode(118);
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_NAME_LENGTH
+
+        MESSAGE: The custom attribute name length is more than 256 characters.
+    *)
+
+  LA_E_CUSTOM_ATTRIBUTE_NAME_LENGTH = TLAStatusCode(119);
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_VALUE_LENGTH
+
+        MESSAGE: The custom attribute value length is more than 1024 characters.
+    *)
+
+  LA_E_CUSTOM_ATTRIBUTE_VALUE_LENGTH = TLAStatusCode(120);
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_LIMIT
+
+        MESSAGE: The maximum allowed number of custom attributes has already
+        been set.
+    *)
+
+  LA_E_CUSTOM_ATTRIBUTE_LIMIT = TLAStatusCode(121);
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_NOT_FOUND
+
+        MESSAGE: The custom attribute does not exist, or the application does
+        not have read access to it.
+    *)
+
+  LA_E_CUSTOM_ATTRIBUTE_NOT_FOUND = TLAStatusCode(122);
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_RESOURCE_TYPE_INVALID
+
+        MESSAGE: Invalid custom attribute resource type.
+    *)
+
+  LA_E_CUSTOM_ATTRIBUTE_RESOURCE_TYPE_INVALID = TLAStatusCode(123);
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_ACCESS_DENIED
+
+        MESSAGE: The application does not have write access to the custom
+        attribute.
+    *)
+
+  LA_E_CUSTOM_ATTRIBUTE_ACCESS_DENIED = TLAStatusCode(124);
+
+    (*
+        CODE: LA_E_CUSTOM_ATTRIBUTE_INVALID
+
+        MESSAGE: Invalid custom attribute.
+    *)
+
+  LA_E_CUSTOM_ATTRIBUTE_INVALID = TLAStatusCode(125);
 
 (*********************************************************************************)
 
@@ -5095,6 +5581,571 @@ begin
     ELAFailException.Create('Failed to reset the activation and trial data');
 end;
 
+(*********************************************************************************)
+
+// The imports below are bound with "delayed", so they are resolved on first
+// call instead of at program start. An application that never calls them
+// keeps loading with an older LexActivator.dll that does not export them.
+
+{$WARN SYMBOL_PLATFORM OFF}
+
+const
+  LAReleaseFlagsToLongWord: array[TLAReleaseFlags] of LongWord = (1, 2);
+  LAResourceTypeToLongWord: array[TLAResourceType] of LongWord = (1, 2, 4, 8, 16, 32);
+
+function LAJSONStrValue(const JSONObject: TJSONObject; const FieldName: string): UnicodeString;
+var
+  JSONValue: TJSONValue;
+begin
+  Result := '';
+  JSONValue := JSONObject.GetValue(FieldName);
+  if (JSONValue <> nil) and not (JSONValue is TJSONNull) then
+    Result := JSONValue.Value;
+end;
+
+function LAJSONInt64Value(const JSONObject: TJSONObject; const FieldName: string): Int64;
+var
+  JSONValue: TJSONValue;
+begin
+  Result := 0;
+  JSONValue := JSONObject.GetValue(FieldName);
+  if (JSONValue <> nil) and not (JSONValue is TJSONNull) then
+    Result := StrToInt64Def(JSONValue.Value, 0);
+end;
+
+// accepts true/false as well as 1/0
+function LAJSONBoolValue(const JSONObject: TJSONObject; const FieldName: string): Boolean;
+var
+  JSONValue: TJSONValue;
+  ValueText: string;
+begin
+  Result := False;
+  JSONValue := JSONObject.GetValue(FieldName);
+  if JSONValue <> nil then
+  begin
+    ValueText := JSONValue.ToString;
+    Result := SameText(ValueText, 'true') or (ValueText = '1');
+  end;
+end;
+
+function Thin_SetCustomAttribute(resourceType: LongWord; const attributeName, attributeValue: PWideChar): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'SetCustomAttribute' delayed;
+
+procedure SetCustomAttribute(ResourceType: TLAResourceType; const Name, Value: UnicodeString);
+begin
+  if not ELAError.CheckOKFail(Thin_SetCustomAttribute(
+      LAResourceTypeToLongWord[ResourceType], PWideChar(Name), PWideChar(Value))) then
+    raise
+    ELAFailException.CreateFmt('Failed to set the custom attribute %s', [Name]);
+end;
+
+function Thin_SetReleasePlatform(const releasePlatform: PWideChar): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'SetReleasePlatform' delayed;
+
+procedure SetReleasePlatform(const ReleasePlatform: UnicodeString);
+begin
+  if not ELAError.CheckOKFail(Thin_SetReleasePlatform(PWideChar(ReleasePlatform))) then
+    raise
+    ELAFailException.CreateFmt('Failed to set the release platform to %s', [ReleasePlatform]);
+end;
+
+function Thin_SetReleaseChannel(const releaseChannel: PWideChar): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'SetReleaseChannel' delayed;
+
+procedure SetReleaseChannel(const ReleaseChannel: UnicodeString);
+begin
+  if not ELAError.CheckOKFail(Thin_SetReleaseChannel(PWideChar(ReleaseChannel))) then
+    raise
+    ELAFailException.CreateFmt('Failed to set the release channel to %s', [ReleaseChannel]);
+end;
+
+function Thin_SetTlsPeerVerification(enable: LongWord): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'SetTlsPeerVerification' delayed;
+
+procedure SetTlsPeerVerification(Enable: Boolean);
+var
+  EnableValue: LongWord;
+begin
+  if Enable then EnableValue := 1 else EnableValue := 0;
+  if not ELAError.CheckOKFail(Thin_SetTlsPeerVerification(EnableValue)) then
+    raise
+    ELAFailException.Create('Failed to set the TLS peer verification');
+end;
+
+function Thin_SetTlsTrustStore(const caBundleFilePath, caDirectoryPath: PWideChar): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'SetTlsTrustStore' delayed;
+
+procedure SetTlsTrustStore(const CaBundleFilePath, CaDirectoryPath: UnicodeString);
+begin
+  // Pointer() of an empty string is nil, which the library accepts as
+  // "not specified"
+  if not ELAError.CheckOKFail(Thin_SetTlsTrustStore(
+      PWideChar(Pointer(CaBundleFilePath)), PWideChar(Pointer(CaDirectoryPath)))) then
+    raise
+    ELAFailException.Create('Failed to set the TLS trust store');
+end;
+
+function Thin_GetLicenseEntitlementSetTier(out tier: Int64): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'GetLicenseEntitlementSetTier' delayed;
+
+function GetLicenseEntitlementSetTier: Int64;
+begin
+  if not ELAError.CheckOKFail(Thin_GetLicenseEntitlementSetTier(Result)) then
+    raise
+    ELAFailException.Create('Failed to get the license entitlement set tier');
+end;
+
+function Thin_GetActivationCreationDate(out activationCreationDate: LongWord): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'GetActivationCreationDate' delayed;
+
+function GetActivationCreationDate: TDateTime;
+var
+  ActivationCreationDate: LongWord;
+begin
+  if not ELAError.CheckOKFail(Thin_GetActivationCreationDate(ActivationCreationDate)) then
+    raise
+    ELAFailException.Create('Failed to get the activation creation date timestamp');
+  Result := UnixToDateTime(ActivationCreationDate);
+end;
+
+function Thin_GetCustomAttribute(resourceType: LongWord; const attributeName: PWideChar; out attributeValue; length: LongWord): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'GetCustomAttribute' delayed;
+
+function GetCustomAttribute(ResourceType: TLAResourceType; const Name: UnicodeString): UnicodeString;
+var
+  ErrorCode: TLAStatusCode;
+  Buffer: UnicodeString;
+  Size: Integer;
+begin
+  Result := '';
+  Size := 2048;
+  repeat
+    Size := Size * 2;
+    SetLength(Buffer, 0);
+    SetLength(Buffer, Size);
+    ErrorCode := Thin_GetCustomAttribute(LAResourceTypeToLongWord[ResourceType],
+      PWideChar(Name), PWideChar(Buffer)^, Size);
+  until (ErrorCode <> LA_E_BUFFER_SIZE) or (Size >= 128 * 1024);
+
+  if not ELAError.CheckOKFail(ErrorCode) then
+    raise ELAFailException.CreateFmt('Failed to get the custom attribute %s', [Name]);
+
+  Result := PWideChar(Buffer);
+end;
+
+function Thin_GetCustomAttributes(resourceType: LongWord; out customAttributes; length: LongWord): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'GetCustomAttributesInternal' delayed;
+
+function GetCustomAttributes(ResourceType: TLAResourceType): TArray<TLACustomAttribute>;
+var
+  ErrorCode: TLAStatusCode;
+  Buffer: UnicodeString;
+  JSONString: UnicodeString;
+  Size: Integer;
+  JSONValue: TJSONValue;
+  JSONArray: TJSONArray;
+  Item: TJSONValue;
+  ItemObject: TJSONObject;
+  I, Count: Integer;
+begin
+  Result := nil;
+  Size := 128 * 1024;
+  repeat
+    Size := Size * 2;
+    SetLength(Buffer, 0);
+    SetLength(Buffer, Size);
+    ErrorCode := Thin_GetCustomAttributes(LAResourceTypeToLongWord[ResourceType],
+      PWideChar(Buffer)^, Size);
+  until (ErrorCode <> LA_E_BUFFER_SIZE) or (Size >= 1024 * 1024);
+
+  if not ELAError.CheckOKFail(ErrorCode) then
+    raise ELAFailException.Create('Failed to get the custom attributes');
+
+  JSONString := PWideChar(Buffer);
+  if JSONString = '' then
+    Exit;
+
+  JSONValue := TJSONObject.ParseJSONValue(JSONString);
+  try
+    if not (JSONValue is TJSONArray) then
+      Exit;
+    JSONArray := TJSONArray(JSONValue);
+
+    SetLength(Result, JSONArray.Count);
+    Count := 0;
+    for I := 0 to JSONArray.Count - 1 do
+    begin
+      Item := JSONArray.Items[I];
+      if not (Item is TJSONObject) then
+        Continue;
+      ItemObject := TJSONObject(Item);
+      Result[Count].Name := LAJSONStrValue(ItemObject, 'name');
+      Result[Count].Value := LAJSONStrValue(ItemObject, 'value');
+      Result[Count].DataType := LAJSONStrValue(ItemObject, 'dataType');
+      Result[Count].ResourceType := UInt32(LAJSONInt64Value(ItemObject, 'resourceType'));
+      Inc(Count);
+    end;
+    SetLength(Result, Count);
+  finally
+    JSONValue.Free;
+  end;
+end;
+
+function Thin_GetDataStoreInfo(out dataStoreInfo; length: LongWord): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'GetDataStoreInfoInternal' delayed;
+
+function GetDataStoreInfo: TLADataStoreInfo;
+var
+  ErrorCode: TLAStatusCode;
+  Buffer: UnicodeString;
+  JSONString: UnicodeString;
+  Size: Integer;
+  JSONValue: TJSONValue;
+  JSONObject: TJSONObject;
+begin
+  Result.StorageKind := '';
+  Result.PermissionFlag := '';
+  Result.IsCustomDataDirectory := False;
+  Result.Path := '';
+
+  Size := 1024;
+  repeat
+    Size := Size * 2;
+    SetLength(Buffer, 0);
+    SetLength(Buffer, Size);
+    ErrorCode := Thin_GetDataStoreInfo(PWideChar(Buffer)^, Size);
+  until (ErrorCode <> LA_E_BUFFER_SIZE) or (Size >= 128 * 1024);
+
+  if not ELAError.CheckOKFail(ErrorCode) then
+    raise ELAFailException.Create('Failed to get the data store info');
+
+  JSONString := PWideChar(Buffer);
+  if JSONString = '' then
+    Exit;
+
+  JSONValue := TJSONObject.ParseJSONValue(JSONString);
+  try
+    if not (JSONValue is TJSONObject) then
+      Exit;
+    JSONObject := TJSONObject(JSONValue);
+
+    Result.StorageKind := LAJSONStrValue(JSONObject, 'storageKind');
+    Result.PermissionFlag := LAJSONStrValue(JSONObject, 'permissionFlag');
+    Result.IsCustomDataDirectory := LAJSONBoolValue(JSONObject, 'isCustomDataDirectory');
+    Result.Path := LAJSONStrValue(JSONObject, 'path');
+  finally
+    JSONValue.Free;
+  end;
+end;
+
+function Thin_LookupLicense(const licenseKey: PWideChar; out licenseLookupInfo; length: LongWord): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'LookupLicenseInternal' delayed;
+
+function LookupLicense(const LicenseKey: UnicodeString): TLALicenseLookupInfo;
+var
+  ErrorCode: TLAStatusCode;
+  Buffer: UnicodeString;
+  JSONString: UnicodeString;
+  Size: Integer;
+  JSONValue: TJSONValue;
+  JSONObject: TJSONObject;
+begin
+  Result.Key := '';
+  Result.&Type := '';
+
+  // single attempt: every call is a server request
+  Size := 4096;
+  SetLength(Buffer, Size);
+  ErrorCode := Thin_LookupLicense(PWideChar(LicenseKey), PWideChar(Buffer)^, Size);
+
+  if not ELAError.CheckOKFail(ErrorCode) then
+    raise ELAFailException.Create('Failed to look up the license');
+
+  JSONString := PWideChar(Buffer);
+  if JSONString = '' then
+    Exit;
+
+  JSONValue := TJSONObject.ParseJSONValue(JSONString);
+  try
+    if not (JSONValue is TJSONObject) then
+      Exit;
+    JSONObject := TJSONObject(JSONValue);
+
+    Result.Key := LAJSONStrValue(JSONObject, 'key');
+    Result.&Type := LAJSONStrValue(JSONObject, 'type');
+  finally
+    JSONValue.Free;
+  end;
+end;
+
+function LAParseReleaseJSON(const JSONString: UnicodeString): TLARelease;
+var
+  JSONValue: TJSONValue;
+  JSONObject: TJSONObject;
+  Item: TJSONValue;
+  ItemObject: TJSONObject;
+  JSONArray: TJSONArray;
+  I, Count: Integer;
+begin
+  Result := Default(TLARelease);
+  if JSONString = '' then
+    Exit;
+
+  JSONValue := TJSONObject.ParseJSONValue(JSONString);
+  try
+    if not (JSONValue is TJSONObject) then
+      Exit;
+    JSONObject := TJSONObject(JSONValue);
+
+    Result.TotalFiles := Integer(LAJSONInt64Value(JSONObject, 'totalFiles'));
+    // the library has used both spellings of these two keys
+    Result.IsPrivate := LAJSONBoolValue(JSONObject, 'isPrivate') or
+      LAJSONBoolValue(JSONObject, 'private');
+    Result.UpdatedAt := LAJSONStrValue(JSONObject, 'updatedAt');
+    if Result.UpdatedAt = '' then
+      Result.UpdatedAt := LAJSONStrValue(JSONObject, 'UpdatedAt');
+    Result.IsPublished := LAJSONBoolValue(JSONObject, 'published');
+    Result.Id := LAJSONStrValue(JSONObject, 'id');
+    Result.CreatedAt := LAJSONStrValue(JSONObject, 'createdAt');
+    Result.Name := LAJSONStrValue(JSONObject, 'name');
+    Result.Channel := LAJSONStrValue(JSONObject, 'channel');
+    Result.Version := LAJSONStrValue(JSONObject, 'version');
+    Result.Notes := LAJSONStrValue(JSONObject, 'notes');
+    Result.PublishedAt := LAJSONStrValue(JSONObject, 'publishedAt');
+    Result.ProductId := LAJSONStrValue(JSONObject, 'productId');
+
+    Item := JSONObject.GetValue('platforms');
+    if Item is TJSONArray then
+    begin
+      JSONArray := TJSONArray(Item);
+      SetLength(Result.Platforms, JSONArray.Count);
+      for I := 0 to JSONArray.Count - 1 do
+        Result.Platforms[I] := JSONArray.Items[I].Value;
+    end;
+
+    Item := JSONObject.GetValue('files');
+    if Item is TJSONArray then
+    begin
+      JSONArray := TJSONArray(Item);
+      SetLength(Result.Files, JSONArray.Count);
+      Count := 0;
+      for I := 0 to JSONArray.Count - 1 do
+      begin
+        Item := JSONArray.Items[I];
+        if not (Item is TJSONObject) then
+          Continue;
+        ItemObject := TJSONObject(Item);
+        Result.Files[Count].Size := LAJSONInt64Value(ItemObject, 'size');
+        Result.Files[Count].Downloads := LAJSONInt64Value(ItemObject, 'downloads');
+        Result.Files[Count].Secured := LAJSONBoolValue(ItemObject, 'secured');
+        Result.Files[Count].Id := LAJSONStrValue(ItemObject, 'id');
+        Result.Files[Count].Name := LAJSONStrValue(ItemObject, 'name');
+        Result.Files[Count].Url := LAJSONStrValue(ItemObject, 'url');
+        Result.Files[Count].Extension := LAJSONStrValue(ItemObject, 'extension');
+        Result.Files[Count].Checksum := LAJSONStrValue(ItemObject, 'checksum');
+        Result.Files[Count].ReleaseId := LAJSONStrValue(ItemObject, 'releaseId');
+        Result.Files[Count].CreatedAt := LAJSONStrValue(ItemObject, 'createdAt');
+        Result.Files[Count].UpdatedAt := LAJSONStrValue(ItemObject, 'updatedAt');
+        Inc(Count);
+      end;
+      SetLength(Result.Files, Count);
+    end;
+  finally
+    JSONValue.Free;
+  end;
+end;
+
+type
+  TLAThin_ReleaseCallbackType = procedure (StatusCode: Integer; ReleaseJson: PWideChar; UserData: Pointer); cdecl;
+
+function Thin_CheckReleaseUpdate(callback: TLAThin_ReleaseCallbackType; releaseFlags: LongWord; userData: Pointer): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'CheckReleaseUpdateInternal' delayed;
+
+var
+  LAReleaseCallbackKind: TLALicenseCallbackKind = lckNone;
+  LAReleaseProcedureCallback: TLAReleaseProcedureCallback;
+  LAReleaseMethodCallback: TLAReleaseMethodCallback;
+  {$IFDEF DELPHI_HAS_CLOSURES}
+  LAReleaseClosureCallback: TLAReleaseClosureCallback;
+  {$ENDIF}
+  LAReleaseCallbackSynchronized: Boolean;
+  LAReleaseCallbackUserData: Pointer;
+  LAReleaseCallbackMutex: TRTLCriticalSection;
+
+type
+  // carries one callback invocation from the library thread to the handler
+  TLAThin_ReleaseInvocation = class
+  public
+    Status: TLAReleaseUpdateStatus;
+    Release: TLARelease;
+    procedure Invoke;
+  end;
+
+procedure TLAThin_ReleaseInvocation.Invoke;
+var
+  Kind: TLALicenseCallbackKind;
+  ProcedureCallback: TLAReleaseProcedureCallback;
+  MethodCallback: TLAReleaseMethodCallback;
+  {$IFDEF DELPHI_HAS_CLOSURES}
+  ClosureCallback: TLAReleaseClosureCallback;
+  {$ENDIF}
+  UserData: Pointer;
+begin
+  EnterCriticalSection(LAReleaseCallbackMutex);
+  try
+    Kind := LAReleaseCallbackKind;
+    ProcedureCallback := LAReleaseProcedureCallback;
+    MethodCallback := LAReleaseMethodCallback;
+    {$IFDEF DELPHI_HAS_CLOSURES}
+    ClosureCallback := LAReleaseClosureCallback;
+    {$ENDIF}
+    UserData := LAReleaseCallbackUserData;
+  finally
+    LeaveCriticalSection(LAReleaseCallbackMutex);
+  end;
+
+  try
+    case Kind of
+      lckProcedure:
+        if Assigned(ProcedureCallback) then
+          ProcedureCallback(Status, Release, UserData);
+      lckMethod:
+        if Assigned(MethodCallback) then
+          MethodCallback(Status, Release, UserData);
+      {$IFDEF DELPHI_HAS_CLOSURES}
+      lckClosure:
+        if Assigned(ClosureCallback) then
+          ClosureCallback(Status, Release, UserData);
+      {$ENDIF}
+    end;
+  except
+    // an exception must not escape into the library thread
+  end;
+end;
+
+procedure LAThin_ReleaseCallbackProxy(StatusCode: Integer; ReleaseJson: PWideChar; UserData: Pointer); cdecl;
+var
+  Invocation: TLAThin_ReleaseInvocation;
+  JSONString: UnicodeString;
+  RunSynchronized: Boolean;
+begin
+  try
+    // ReleaseJson is only valid during this call, so copy it first
+    JSONString := ReleaseJson;
+
+    EnterCriticalSection(LAReleaseCallbackMutex);
+    try
+      if LAReleaseCallbackKind = lckNone then
+        Exit;
+      RunSynchronized := LAReleaseCallbackSynchronized;
+    finally
+      LeaveCriticalSection(LAReleaseCallbackMutex);
+    end;
+
+    Invocation := TLAThin_ReleaseInvocation.Create;
+    try
+      case StatusCode of
+        30 {LA_RELEASE_UPDATE_AVAILABLE}: Invocation.Status := lrsUpdateAvailable;
+        31 {LA_RELEASE_UPDATE_NOT_AVAILABLE}: Invocation.Status := lrsUpdateNotAvailable;
+        32 {LA_RELEASE_UPDATE_AVAILABLE_NOT_ALLOWED}: Invocation.Status := lrsUpdateAvailableNotAllowed;
+      else
+        Invocation.Status := lrsUnknown;
+      end;
+      Invocation.Release := LAParseReleaseJSON(JSONString);
+
+      if RunSynchronized then
+        TThread.Synchronize(nil, Invocation.Invoke)
+      else
+        Invocation.Invoke;
+    finally
+      Invocation.Free;
+    end;
+  except
+    // an exception must not escape into the library thread
+  end;
+end;
+
+// must be called with LAReleaseCallbackMutex held
+procedure LAStartCheckReleaseUpdate(ReleaseFlags: TLAReleaseFlags; UserData: Pointer; Synchronized: Boolean);
+begin
+  LAReleaseCallbackUserData := UserData;
+  LAReleaseCallbackSynchronized := Synchronized;
+
+  // the callback arrives on a thread created by the library
+  IsMultiThread := True;
+
+  if not ELAError.CheckOKFail(Thin_CheckReleaseUpdate(
+      LAThin_ReleaseCallbackProxy, LAReleaseFlagsToLongWord[ReleaseFlags], nil)) then
+    raise
+    ELAFailException.Create('Failed to check for the release update');
+end;
+
+procedure CheckReleaseUpdate(Callback: TLAReleaseProcedureCallback; ReleaseFlags: TLAReleaseFlags; UserData: Pointer; Synchronized: Boolean); overload;
+begin
+  EnterCriticalSection(LAReleaseCallbackMutex);
+  try
+    LAReleaseProcedureCallback := Callback;
+    LAReleaseCallbackKind := lckProcedure;
+    LAStartCheckReleaseUpdate(ReleaseFlags, UserData, Synchronized);
+  finally
+    LeaveCriticalSection(LAReleaseCallbackMutex);
+  end;
+end;
+
+procedure CheckReleaseUpdate(Callback: TLAReleaseMethodCallback; ReleaseFlags: TLAReleaseFlags; UserData: Pointer; Synchronized: Boolean); overload;
+begin
+  EnterCriticalSection(LAReleaseCallbackMutex);
+  try
+    LAReleaseMethodCallback := Callback;
+    LAReleaseCallbackKind := lckMethod;
+    LAStartCheckReleaseUpdate(ReleaseFlags, UserData, Synchronized);
+  finally
+    LeaveCriticalSection(LAReleaseCallbackMutex);
+  end;
+end;
+
+{$IFDEF DELPHI_HAS_CLOSURES}
+procedure CheckReleaseUpdate(Callback: TLAReleaseClosureCallback; ReleaseFlags: TLAReleaseFlags; UserData: Pointer; Synchronized: Boolean); overload;
+begin
+  EnterCriticalSection(LAReleaseCallbackMutex);
+  try
+    LAReleaseClosureCallback := Callback;
+    LAReleaseCallbackKind := lckClosure;
+    LAStartCheckReleaseUpdate(ReleaseFlags, UserData, Synchronized);
+  finally
+    LeaveCriticalSection(LAReleaseCallbackMutex);
+  end;
+end;
+{$ENDIF}
+
+function Thin_SyncLicenseActivation: TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'SyncLicenseActivation' delayed;
+
+function SyncLicenseActivation: TLAKeyStatus;
+begin
+  Result := ELAError.CheckKeyStatus(Thin_SyncLicenseActivation);
+end;
+
+function Thin_SyncTrialActivation: TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'SyncTrialActivation' delayed;
+
+function SyncTrialActivation: TLAKeyStatus;
+begin
+  Result := ELAError.CheckKeyStatus(Thin_SyncTrialActivation);
+end;
+
+function Thin_MigrateToSystemWideActivation(oldPermissionFlag: LongWord): TLAStatusCode; cdecl;
+  external LexActivator_DLL name 'MigrateToSystemWideActivation' delayed;
+
+procedure MigrateToSystemWideActivation(OldPermissionFlag: TLAFlags);
+begin
+  if not ELAError.CheckOKFail(Thin_MigrateToSystemWideActivation(LAFlagsToLongWord[OldPermissionFlag])) then
+    raise
+    ELAFailException.Create('Failed to migrate to the system-wide activation');
+end;
+
+{$WARN SYMBOL_PLATFORM ON}
+
 class function ELAError.CreateByCode(ErrorCode: TLAStatusCode): ELAError;
 begin
   case ErrorCode of
@@ -5177,6 +6228,14 @@ begin
     LA_E_DEVICE_VALIDATION_FAILED: Result := ELADeviceValidationFailedException.Create;
     LA_E_FINGERPRINT_VALIDATION_GRACE_PERIOD_OVER: Result := ELAFingerprintValidationGracePeriodOverException.Create;
     LA_E_ACTIVATION_CLONE_DETECTED: Result := ELAActivationCloneDetectedException.Create;
+    LA_E_INSUFFICIENT_SYSTEM_RESOURCES: Result := ELAInsufficientSystemResourcesException.Create;
+    LA_E_CUSTOM_ATTRIBUTE_NAME_LENGTH: Result := ELACustomAttributeNameLengthException.Create;
+    LA_E_CUSTOM_ATTRIBUTE_VALUE_LENGTH: Result := ELACustomAttributeValueLengthException.Create;
+    LA_E_CUSTOM_ATTRIBUTE_LIMIT: Result := ELACustomAttributeLimitException.Create;
+    LA_E_CUSTOM_ATTRIBUTE_NOT_FOUND: Result := ELACustomAttributeNotFoundException.Create;
+    LA_E_CUSTOM_ATTRIBUTE_RESOURCE_TYPE_INVALID: Result := ELACustomAttributeResourceTypeInvalidException.Create;
+    LA_E_CUSTOM_ATTRIBUTE_ACCESS_DENIED: Result := ELACustomAttributeAccessDeniedException.Create;
+    LA_E_CUSTOM_ATTRIBUTE_INVALID: Result := ELACustomAttributeInvalidException.Create;
   else
     Result := ELAUnknownErrorCodeException.Create(ErrorCode);
   end;
@@ -5725,12 +6784,63 @@ begin
   FErrorCode := LA_E_ACTIVATION_CLONE_DETECTED;
 end;
 
+constructor ELAInsufficientSystemResourcesException.Create;
+begin
+  inherited Create('Insufficient system resources to complete the operation');
+  FErrorCode := LA_E_INSUFFICIENT_SYSTEM_RESOURCES;
+end;
+
+constructor ELACustomAttributeNameLengthException.Create;
+begin
+  inherited Create('The custom attribute name length is more than 256 characters');
+  FErrorCode := LA_E_CUSTOM_ATTRIBUTE_NAME_LENGTH;
+end;
+
+constructor ELACustomAttributeValueLengthException.Create;
+begin
+  inherited Create('The custom attribute value length is more than 1024 characters');
+  FErrorCode := LA_E_CUSTOM_ATTRIBUTE_VALUE_LENGTH;
+end;
+
+constructor ELACustomAttributeLimitException.Create;
+begin
+  inherited Create('The maximum allowed number of custom attributes has already been set');
+  FErrorCode := LA_E_CUSTOM_ATTRIBUTE_LIMIT;
+end;
+
+constructor ELACustomAttributeNotFoundException.Create;
+begin
+  inherited Create('The custom attribute does not exist, or the application does not have read access to it');
+  FErrorCode := LA_E_CUSTOM_ATTRIBUTE_NOT_FOUND;
+end;
+
+constructor ELACustomAttributeResourceTypeInvalidException.Create;
+begin
+  inherited Create('Invalid custom attribute resource type');
+  FErrorCode := LA_E_CUSTOM_ATTRIBUTE_RESOURCE_TYPE_INVALID;
+end;
+
+constructor ELACustomAttributeAccessDeniedException.Create;
+begin
+  inherited Create('The application does not have write access to the custom attribute');
+  FErrorCode := LA_E_CUSTOM_ATTRIBUTE_ACCESS_DENIED;
+end;
+
+constructor ELACustomAttributeInvalidException.Create;
+begin
+  inherited Create('Invalid custom attribute');
+  FErrorCode := LA_E_CUSTOM_ATTRIBUTE_INVALID;
+end;
+
 initialization
   InitializeCriticalSection(LALicenseCallbackMutex[lciSetLicenseCallback]);
   InitializeCriticalSection(LALicenseCallbackMutex[lciCheckForReleaseUpdate]);
+  InitializeCriticalSection(LAReleaseCallbackMutex);
 finalization
   try ResetCheckForReleaseUpdateCallback; except end;
   try ResetLicenseCallback; except end;
+  LAReleaseCallbackKind := lckNone;
+  DeleteCriticalSection(LAReleaseCallbackMutex);
   DeleteCriticalSection(LALicenseCallbackMutex[lciCheckForReleaseUpdate]);
   DeleteCriticalSection(LALicenseCallbackMutex[lciSetLicenseCallback]);
 end.
